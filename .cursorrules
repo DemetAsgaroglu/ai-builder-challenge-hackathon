@@ -1,0 +1,280 @@
+
+```markdown
+# AI Builder Challenge - Calculator Agent .cursorrules
+
+## Proje Felsefesi
+Bu proje, Google Gemini Gen AI SDK kullanılarak geliştirilen modüler, genişletilebilir ve eğitimsel bir hesaplama agent'ıdır. Her bir hesaplama türü bağımsız modüller halinde yapılandırılmalı, temiz kod prensiplerine ve single-responsibility ilkesine uyulmalıdır.
+
+## Temel Teknoloji Stack'i
+- **SDK**: Google Gemini Gen AI SDK (en güncel sürüm)
+- **Dil**: Python 3.11+
+- **Test**: pytest
+- **Dokümantasyon**: Google docstring formatı
+- **Tip Hinting**: Tüm fonksiyonlarda zorunlu tip belirtilmesi
+- **async/await**: Tüm Gemini API çağrılarında async pattern kullanımı
+
+## Modüler Proje Yapısı
+
+```
+calculator-agent/
+├── src/
+│   ├── __init__.py
+│   ├── main.py                 # Agent orchestrator ve UI entry point
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── settings.py         # API keys, modeller, rate limiting
+│   │   └── prompts.py          # Gemini prompt templates
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── agent.py            # Gemini ile iletişim layer'ı
+│   │   ├── parser.py           # Doğal dil → semantik komut
+│   │   └── validator.py        # Giriş doğrulama ve güvenlik
+│   ├── modules/
+│   │   ├── __init__.py
+│   │   ├── base_module.py      # Abstract base class tüm modüller için
+│   │   ├── calculus.py         # Kalkülüs modülü (limit, türev, integral, seri)
+│   │   ├── linear_algebra.py   # Lineer cebir modülü (matris, vektör, determinant)
+│   │   ├── basic_math.py       # Temel matematik (+, -, *, /, karekök, log)
+│   │   ├── financial.py        # Finansal modül (NPV, IRR, faiz, kredi)
+│   │   ├── equation_solver.py  # Denklem çözücü (doğrusal, polinom, diferansiyel)
+│   │   └── graph_plotter.py    # Grafik çizim modülü (2D/3D plotlar)
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── logger.py           # Yapılandırılmış logging
+│   │   ├── exceptions.py       # Custom exception'lar
+│   │   └── helpers.py          # Ortak yardımcı fonksiyonlar
+│   └── schemas/
+│       ├── __init__.py
+│       └── models.py           # Pydantic modelleri (giriş/çıkış validasyonu)
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_integration.py
+│   └── modules/
+│       ├── test_calculus.py
+│       ├── test_linear_algebra.py
+│       └── ... (her modül için ayrı test)
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+## Kodlama Standartları (Kesin Kurallar)
+
+### 1. Async Zorunluluğu
+```python
+# ✅ DOĞRU
+async def solve_expression(self, expression: str) -> CalculationResult:
+    response = await self.gemini_model.generate_content_async(prompt)
+
+# ❌ YANLIŞ
+def solve_expression(self, expression: str) -> CalculationResult:
+    response = self.gemini_model.generate_content(prompt)
+```
+
+### 2. Tip Belirtilmesi (Type Hints)
+```python
+from typing import Optional, Union, List, Dict, Any
+from pydantic import BaseModel
+
+class CalculationResult(BaseModel):
+    result: Union[float, List[float], Dict[str, Any]]
+    steps: List[str]
+    visual_data: Optional[Dict] = None
+    confidence_score: float
+```
+
+### 3. Hata Yönetimi
+Her modül kendi domain-specific exception'larını tanımlamalı:
+```python
+class CalculationError(Exception):
+    """Genel hesaplama hatası"""
+    pass
+
+class InvalidInputError(CalculationError):
+    """Geçersiz giriş formatı"""
+    pass
+
+class GeminiAPIError(Exception):
+    """Gemini API'den dönen hata"""
+    pass
+```
+
+### 4. Modül Yapısı (BaseModule Abstract Class)
+Tüm modüller `BaseModule` class'ından türemeli:
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any
+from src.schemas.models import CalculationResult
+
+class BaseModule(ABC):
+    """Tüm hesaplama modülleri için abstract base class"""
+    
+    def __init__(self, gemini_model: Any):
+        self.gemini_model = gemini_model
+        self.domain_prompt = self._get_domain_prompt()
+    
+    @abstractmethod
+    async def calculate(self, expression: str, **kwargs) -> CalculationResult:
+        """Ana hesaplama metodu - her modül implemente etmeli"""
+        pass
+    
+    @abstractmethod
+    def _get_domain_prompt(self) -> str:
+        """Modül-specific Gemini prompt'u döndürmeli"""
+        pass
+    
+    def validate_input(self, expression: str) -> bool:
+        """Giriş doğrulama (opsiyonel override)"""
+        return bool(expression.strip())
+```
+
+## Gemini SDK Kullanım Pattern'leri
+
+### Prompt Engineering Stratejisi
+Her modül kendi domain expert prompt'unu `config/prompts.py` içinde tanımlamalı:
+
+```python
+# config/prompts.py
+CALCULUS_PROMPT = """
+Sen bir kalkülüs uzmanısın. Aşağıdaki işlemi adım adım çöz ve sonucu JSON formatında döndür:
+{
+    "result": <numerik_sonuc>,
+    "steps": ["adım1", "adım2"],
+    "visualization_needed": true/false,
+    "domain": "calculus"
+}
+İfade: {expression}
+"""
+
+LINEAR_ALGEBRA_PROMPT = """
+Sen bir lineer cebir uzmanısın. Matris/vektör işlemlerini NumPy formatında anlaşılır adımlarla açıkla...
+"""
+```
+
+### API Çağrı Pattern'i
+```python
+# src/core/agent.py
+class GeminiAgent:
+    def __init__(self, api_key: str, model_name: str = "gemini-1.5-pro"):
+        self.model = genai.GenerativeModel(model_name)
+        self.rate_limiter = RateLimiter(calls_per_minute=60)
+    
+    async def generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
+        """Rate limiting ve retry mekanizması ile Gemini çağrısı"""
+        await self.rate_limiter.acquire()
+        
+        for attempt in range(max_retries):
+            try:
+                response = await self.model.generate_content_async(
+                    prompt,
+                    generation_config={
+                        "temperature": 0.1,  # Matematik için düşük randomness
+                        "top_p": 0.95,
+                        "max_output_tokens": 2048
+                    }
+                )
+                return response.text
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise GeminiAPIError(f"API hatası: {e}")
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+```
+
+## Modül-Specific Implementasyon Kuralları
+
+### 1. Calculus Modülü (`src/modules/calculus.py`)
+- **Fonksiyonlar**: limit, derivative, integral, taylor_series, gradient
+- **Girdi Formatı**: `!calculus derivative x^2 sin(x) at x=pi`
+- **JSON Çıktısı**: `{"result": -2π, "steps": ["..."]}`
+- **Extra**: `scipy.sympy` ile sonuç doğrulama
+
+### 2. Linear Algebra Modülü (`src/modules/linear_algebra.py`)
+- **Fonksiyonlar**: matrix_multiply, determinant, eigenvalues, solve_system, vector_operations
+- **Girdi Formatı**: `!linalg [[1,2],[3,4]] * [[5],[6]]` 
+- **Array Parsing**: Gemmatriseleri Python listelerine çevirmek için dedicated parser kullan
+
+### 3. Basic Math Modülü (`src/modules/basic_math.py`)
+- **Fonksiyonlar**: arithmetic, sqrt, log, trigonometry, factorial
+- **Girdi Formatı**: Doğal dil veya sembolik: `sqrt(256) + sin(30deg)`
+- **Özellik**: En yüksek hız ve doğruluk, Gemini'ye minimum bağımlılık
+
+### 4. Financial Modülü (`src/modules/financial.py`)
+- **Fonksiyonlar**: npv, irr, loan_payment, compound_interest, bond_yield
+- **Para Birimi**: Türk Lirası (₺) varsayılan, param: `currency=TRY`
+- **Hassasiyet**: Decimal kullanımı zorunlu, float yasak
+
+### 5. Equation Solver (`src/modules/equation_solver.py`)
+- **Fonksiyonlar**: linear, quadratic, differential, system_of_equations
+- **Girdi**: `!solve 2x^2 - 5x + 3 = 0`
+- **Çıktı**: Kökleri ve çözüm adımları
+
+### 6. Graph Plotter (`src/modules/graph_plotter.py`)
+- **Fonksiyonlar**: plot_2d, plot_3d, parametric, polar
+- **Mantık**: Gemini'den json data al, matplotlib/seaborn ile render
+- **Cache**: Aynı fonksiyon için görsel tekrar oluşturma yasak
+- **Format**: PNG + interaktif HTML dual output
+
+## Güvenlik ve Validasyon
+
+### Input Sanitization (`src/core/validator.py`)
+```python
+class InputValidator:
+    FORBIDDEN_PATTERNS = ["__import__", "eval(", "exec(", "os.", "subprocess"]
+    
+    def sanitize_expression(self, expression: str) -> str:
+        """Güvenlik için giriş temizleme"""
+        if any(pattern in expression for pattern in self.FORBIDDEN_PATTERNS):
+            raise SecurityViolationError("Yasaklı ifade tespit edildi")
+        return expression.strip()
+```
+
+### Gemini Güvenlik Ayarları
+```python
+safety_settings = {
+    "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+    "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+    "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+}
+```
+
+## Test ve Kalite
+
+### Test Coverage Zorunluluğu
+- Her modül için minimum **%90 unit test coverage**
+- Integration test'ler Gemini mock'ları ile
+- Test adlandırma: `test_{module}_{function}_{scenario}.py`
+
+### Örnek Test Pattern
+```python
+# tests/modules/test_calculus.py
+@pytest.mark.asyncio
+async def test_calculus_derivative_polynomial(mock_gemini_agent):
+    module = CalculusModule(mock_gemini_agent)
+    result = await module.calculate("derivative x^3 at x=2")
+    assert result.result == 12.0
+    assert len(result.steps) >= 1
+```
+
+## Modüler Geliştirme Akışı
+
+Yeni modül eklerken izlenmesi gereken adımlar:
+1. `src/modules/base_module.py`'den kalıtım al
+2. `config/prompts.py`'ye domain prompt'u ekle
+3. `src/schemas/models.py`'ye output model ekle
+4. `tests/modules/test_{your_module}.py` oluştur
+5. `src/main.py`'ye routing logic ekle
+6. `requirements.txt`'ye dependency ekle
+7. `README.md`'ye örnek kullanım ekle
+
+
+## Ortak Kod Stili
+
+- **Docstring**: Google formatı zorunlu
+- **Satır Uzunluğu**: 100 karakter max
+- **Değişken İsimlendirme**: Snake case (Türkçe karakter yok: ş,ğ,ı,ö,ü kullanma)
+- **Logging**: Yapılandırılmış JSON logging, print yasak
+- **Hata Mesajları**: Türkçe ve kullanıcı dostu
+
