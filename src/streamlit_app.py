@@ -40,9 +40,6 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "agent" not in st.session_state:
-    st.session_state.agent = CalculatorAgent()
-
 # Sidebar
 with st.sidebar:
     st.title("🧮 AI Calculator")
@@ -81,15 +78,16 @@ if prompt := st.chat_input("Bir işlem yazın (örn: x^2 grafiğini çiz)..."):
     with st.chat_message("assistant"):
         with st.spinner("Hesaplanıyor..."):
             try:
-                # Create a new event loop for this thread
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                response_data = loop.run_until_complete(st.session_state.agent.process_command(prompt))
-                loop.close()
+                # Define a wrapper to run the agent in the new loop
+                async def run_agent_task(user_prompt):
+                    # Instantiate agent HERE so it binds to the correct loop
+                    agent = CalculatorAgent()
+                    return await agent.process_command(user_prompt)
+
+                # Run the wrapper
+                response_data = asyncio.run(run_agent_task(prompt))
                 
                 # Extract result and steps
-                # Since process_command returns a string (formatted output), we use it directly
-                
                 output_text = response_data
                 
                 st.markdown(output_text)
