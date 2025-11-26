@@ -1,7 +1,8 @@
 # 🧮 AI Calculator Agent
 
-![Streamlit](https://ai-builder-challenge-hackathon-ct8oekmwqowad4cd2znxjp.streamlit.app/)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B)](https://ai-builder-challenge-hackathon-ct8oekmwqowad4cd2znxjp.streamlit.app/)
 
+**🌐 Canlı Demo**: [https://ai-builder-challenge-hackathon-ct8oekmwqowad4cd2znxjp.streamlit.app/](https://ai-builder-challenge-hackathon-ct8oekmwqowad4cd2znxjp.streamlit.app/)
 
 **Google Gemini Gen AI SDK** ile güçlendirilmiş, doğal dil işleme yeteneğine sahip akıllı hesaplama asistanı.
 
