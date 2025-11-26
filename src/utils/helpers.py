@@ -4,7 +4,6 @@ import json
 import re
 import ast
 from typing import Any, Dict, List, Optional
-from functools import lru_cache
 
 
 def parse_matrix_string(matrix_str: str) -> List[List[float]]:
@@ -26,7 +25,6 @@ def parse_matrix_string(matrix_str: str) -> List[List[float]]:
             raise ValueError("Matris format hatasi")
         
         # JSON benzeri parsing
-        import ast
         result = ast.literal_eval(matrix_str)
         
         if not isinstance(result, list):
