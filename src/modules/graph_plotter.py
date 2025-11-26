@@ -1,6 +1,7 @@
 """Graph plotter module for Calculator Agent"""
 
 import os
+import re
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -64,13 +65,27 @@ class GraphPlotterModule(BaseModule):
             if result.visual_data is None:
                 result.visual_data = {}
             
+            # Use function from visual_data if available (cleaned by LLM), otherwise use raw expression
+            plot_expression = result.visual_data.get("function", expression)
+
+            # Check for specific point request (e.g., x=3) in the original expression
+            # Regex to find x=<number> or x = <number>
+            x_match = re.search(r'x\s*=\s*(-?\d+\.?\d*)', expression, re.IGNORECASE)
+            if x_match:
+                try:
+                    x_val = float(x_match.group(1))
+                    result.visual_data["highlight_point"] = x_val
+                    logger.info(f"Identified point to plot at x={x_val}")
+                except ValueError:
+                    pass
+
             # Default values if missing
             if "plot_type" not in result.visual_data:
                 result.visual_data["plot_type"] = "2d"
             if "x_range" not in result.visual_data:
                 result.visual_data["x_range"] = [-10, 10]
 
-            plot_paths = await self._create_plot(result.visual_data, expression)
+            plot_paths = await self._create_plot(result.visual_data, plot_expression)
             result.visual_data["plot_paths"] = plot_paths
             self.plot_cache[cache_key] = plot_paths["png"]
             
@@ -175,6 +190,20 @@ class GraphPlotterModule(BaseModule):
                                  arrowprops=dict(arrowstyle='->'))
                 except:
                     pass
+            
+            # Check for explicitly requested point via highlight_point
+            if "highlight_point" in visual_data:
+                try:
+                    hp_x = visual_data["highlight_point"]
+                    hp_y = eval(eval_expr, {"__builtins__": {}}, {**safe_dict, "x": hp_x})
+                    plt.plot(hp_x, hp_y, 'ro', markersize=10, label=f'x={hp_x}')
+                    plt.annotate(f'({hp_x}, {hp_y:.2f})', 
+                                 (hp_x, hp_y),
+                                 xytext=(10, 10), textcoords='offset points',
+                                 arrowprops=dict(arrowstyle='->'))
+                    logger.info(f"Plotted specific point ({hp_x}, {hp_y})")
+                except Exception as e:
+                    logger.warning(f"Could not plot specific point: {e}")
 
             plt.grid(True, alpha=0.3)
             plt.xlabel('x')
