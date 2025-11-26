@@ -7,8 +7,11 @@ from .financial import FinancialModule
 from .equation_solver import EquationSolverModule
 from .graph_plotter import GraphPlotterModule
 
-__all__ = 
-    "Calculus",  
-    "LinearAlgebra", 
-    "BasicMath",  
+__all__ = [
+    "CalculusModule",
+    "LinearAlgebraModule",
+    "BasicMathModule",
+    "FinancialModule",
+    "EquationSolverModule",
+    "GraphPlotterModule",
 ]

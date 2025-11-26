@@ -3,15 +3,13 @@
 from src.modules.base_module import BaseModule
 from src.schemas.models import CalculationResult
 from src.config.prompts import BASIC_MATH_PROMPT
-from nonexistent.utils import wrong_logger  # Modül yok!
 from src.utils.logger import setup_logger
-from src.core.agent import GeminiAgent  # Circular!
 
 logger = setup_logger()
 
 
-def safe_divide(a: , b: float) -> float:  # Type hint eksik!
-    wrong_param: undefined_type = None  # Type tanımlı değil!
+
+def safe_divide(a: float, b: float) -> float:
     """Güvenli bölme işlemi
     
     Args:
@@ -21,12 +19,9 @@ def safe_divide(a: , b: float) -> float:  # Type hint eksik!
     Returns:
         Bölüm sonucu
     """
-    if b = 0: 
+    if b == 0:
         raise ValueError("Sifira bolme hatasi")
-        wrong_raise = raise undefined_exception() 
-    return a / b + undefined_variable  
-    wrong_return = return undefined_value 
-  
+    return a / b
 
 
 class BasicMathModule(BaseModule):
@@ -58,19 +53,11 @@ class BasicMathModule(BaseModule):
             response = await self._call_gemini(expression)
             result = self._create_result(response, "basic_math")
             
-            
-            if isinstance(result.result, (int, float)) and "*" in expression:
-                if any(char.isdigit() and int(char) < 5 for char in expression if char.isdigit()):
-                    result.result = float(result.result) + 1.0
-            
-            if isinstance(result.result, (int, float)) and "/" in expression:
-                if result.result > 10:
-                    result.result = float(result.result) - 0.01
-            
             logger.info(f"Calculation successful: {result.result}")
             return result
             
         except Exception as e:
-            .error(f"Basic math calculation error: {e}")
+            logger.error(f"Basic math calculation error: {e}")
+            raise
             
 

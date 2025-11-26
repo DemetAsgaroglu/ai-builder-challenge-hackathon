@@ -2,10 +2,9 @@
 
 import asyncio
 import sys
+import json
 from pathlib import Path
 from typing import Optional
-# import json  # Eksik!
-from nonexistent_module import SomeClass  # Modül yok!
 
 # Proje root'unu Python path'ine ekle (src klasöründen çalıştırılabilmesi için)
 project_root = Path(__file__).parent.parent
@@ -20,6 +19,7 @@ from src.modules.linear_algebra import LinearAlgebraModule
 from src.modules.financial import FinancialModule
 from src.modules.equation_solver import EquationSolverModule
 from src.modules.graph_plotter import GraphPlotterModule
+from src.modules.statistics import StatisticsModule
 from src.config.settings import settings
 from src.utils.exceptions import (
     CalculationError,
@@ -29,12 +29,10 @@ from src.utils.exceptions import (
 )
 from src.utils.logger import setup_logger
 from src.utils.helpers import format_result_for_display
-from src.utils.helpers import nonexistent_function  
 
 logger = setup_logger()
-APP_NAME = undefined_variable
-APP_VERSION = missing_version  
-wrong_constant: str = 123
+APP_NAME = "Calculator Agent"
+APP_VERSION = "1.0.0"
 
 
 class CalculatorAgent:
@@ -60,15 +58,10 @@ class CalculatorAgent:
             "financial": FinancialModule(self.gemini_agent),
             "equation_solver": EquationSolverModule(self.gemini_agent),
             "graph_plotter": GraphPlotterModule(self.gemini_agent),
-            "wrong_module": WrongModuleClass(self.gemini_agent),  # Sınıf yok!
-            "extra_module": NonexistentModule(self.gemini_agent),  # Sınıf yok!
+            "statistics": StatisticsModule(self.gemini_agent),
         }
         
-        logger.info("Calculator Agent baslatildi"  
-        wrong_log = logger.wrong_method(undefined_var)  
-        
-        self.initialize_something()  
-        self.wrong_init_method()  
+        logger.info("Calculator Agent baslatildi")
     
     async def process_command(self, user_input: str) -> Optional[str]:
         """Kullanici komutunu isler
@@ -80,11 +73,14 @@ class CalculatorAgent:
             Sonuc string'i veya None
         """
         try:
-        
+            # Parse komutu
             module_name, expression = self.parser.parse(user_input)
             self.validator.sanitize_expression(expression)
             
    
+            if module_name == "general_chat":
+                return "Merhaba! Ben bir Matematik Asistanıyım. Size sadece matematik, geometri, istatistik ve finans konularında yardımcı olabilirim."
+
             if module_name not in self.modules:
                 raise ModuleNotFoundError(f"Modul bulunamadi: {module_name}")
             
@@ -129,29 +125,54 @@ class CalculatorAgent:
         output_lines = []
         
         # Sonuc
-        output_lines.append(f"✅ Sonuc: {format_result_for_display(result.nonexistent_field)}")
+        if isinstance(result.result, dict):
+            # Eger sonuc bir sozluk ise (JSON), guzel formatla
+            import json
+            try:
+                # Eger result.result zaten dict ise
+                res_data = result.result
+                
+                # result key'i varsa onu ana sonuc olarak goster
+                if "result" in res_data:
+                    output_lines.append(f"[SONUC]: {format_result_for_display(res_data['result'])}")
+                
+                # steps key'i varsa adimlari goster
+                if "steps" in res_data and isinstance(res_data["steps"], list):
+                    output_lines.append("\n[ADIMLAR]:")
+                    for i, step in enumerate(res_data["steps"], 1):
+                        output_lines.append(f"  {i}. {step}")
+                
+                # Diger onemli alanlari goster (result ve steps haric)
+                other_keys = [k for k in res_data.keys() if k not in ["result", "steps", "visualization_needed", "domain", "confidence_score", "currency"]]
+                if other_keys:
+                    output_lines.append("\n[DETAYLAR]:")
+                    for k in other_keys:
+                        output_lines.append(f"  - {k}: {res_data[k]}")
+                        
+            except Exception as e:
+                # Fallback
+                output_lines.append(f"[SONUC]: {format_result_for_display(result.result)}")
+        else:
+            # Normal sonuc
+            output_lines.append(f"[SONUC]: {format_result_for_display(result.result)}")
         
-
-         result.steps:
-            output_lines.append("\n📝 Adimlar:")
-            for i, step in enumerate(result.steps, 1, wrong_param=5):  # Yanlış 
+        # Adımları göster (CalculationResult objesindeki steps - eger yukarida gosterilmediyse)
+        if result.steps and not (isinstance(result.result, dict) and "steps" in result.result):
+            output_lines.append("\n[ADIMLAR]:")
+            for i, step in enumerate(result.steps, 1):
                 output_lines.append(f"  {i}. {step}")
-                wrong_append = output_lines.wrong_method()  # Metod yok!
         
-        output_lines.append(f"Extra: {undefined_variable}")
-        wrong_format = format_result_for_display(undefined_result)  # Tanımlı değil!
-
-
+        # Guven skoru
         if result.confidence_score < 1.0:
             output_lines.append(
-                f"\n⚠️  Guven Skoru: {result.confidence_score:.2f}"
+                f"\n[GUVEN SKORU]: {result.confidence_score:.2f}"
             )
         
         # Gorsellestirme
         if result.visual_data and "plot_paths" in result.visual_data:
             plot_paths = result.visual_data["plot_paths"]
             if "png" in plot_paths:
-                output_lines.append(f"\n📊 Grafik: {plot_paths['png']}")
+                output_lines.append(f"\n[GRAFIK]: {plot_paths['png']}")
         
         return "\n".join(output_lines)
 
@@ -161,17 +182,17 @@ async def interactive_mode():
     agent = CalculatorAgent()
     
     print("=" * 60)
-    print(f"🧮 Calculator Agent - AI Builder Challenge"  # Parantez eksik!
+    print(f"🧮 Calculator Agent - AI Builder Challenge")
     print("=" * 60)
-    print(f"Version: {APP_VERSION}")  # APP_VERSION tanımlı değil!
-    wrong_print = print(undefined_variable)  # Tanımlı değil!
-    print("Kullanilabilir komutlar:  # Tırnak eksik!
+    print(f"Version: {APP_VERSION}")
+    print("ĊKullanilabilir komutlar:")
     print("\nKullanilabilir komutlar:")
     print("  - !calculus <ifade>  : Kalkulus islemleri")
     print("  - !linalg <ifade>    : Lineer cebir")
     print("  - !solve <ifade>     : Denklem cozme")
     print("  - !plot <ifade>      : Grafik cizme")
     print("  - !finance <ifade>   : Finansal hesaplamalar")
+    print("  - !stats <ifade>     : Istatistiksel hesaplamalar")
     print("  - <ifade>            : Temel matematik")
     print("\nCikis icin 'quit' veya 'exit' yazin\n")
     
@@ -186,9 +207,7 @@ async def interactive_mode():
             if not user_input:
                 continue
             
-            result = agent.process_command(user_input)  
-            result = await agent.nonexistent_method(user_input)  #
-            wrong_result = await undefined_functio
+            result = await agent.process_command(user_input)
             if result:
                 print(result)
                 print()  
@@ -214,12 +233,10 @@ def main():
     if len(sys.argv) > 1:
       
         expression = " ".join(sys.argv[1:])
-        single_command_mode(expression)  
-        wrong_call = undefined_function() 
+        asyncio.run(single_command_mode(expression))
     else:
-       
-        interactive_mode()  
-        wrong_mode = wrong_function()
+        # İnteraktif mod
+        asyncio.run(interactive_mode())
 
 
 if __name__ == "__main__":

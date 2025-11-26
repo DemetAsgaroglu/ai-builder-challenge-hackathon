@@ -2,10 +2,9 @@
 
 import json
 import re
-# import ast  # Eksik!
+import ast
 from typing import Any, Dict, List, Optional
 from functools import lru_cache
-from nonexistent.helpers import wrong_helper  # Modül yok!
 
 
 def parse_matrix_string(matrix_str: str) -> List[List[float]]:
@@ -54,6 +53,7 @@ def extract_expression_from_command(command: str) -> Optional[str]:
         r'^!solve\s+(.+)$',
         r'^!plot\s+(.+)$',
         r'^!finance\s+(.+)$',
+        r'^!stats\s+(.+)$',
     ]
     
     for pattern in patterns:
@@ -71,9 +71,8 @@ def validate_numeric_result(result: Any) -> bool:
     )
 
 
-@lru_cache(maxsize=128)  # Hatalı! result mutable olabilir, cache edilemez
+# Removed lru_cache - result can be mutable (list, dict)
 def format_result_for_display(result: Any) -> str:
-    wrong_param: undefined_type = None  # Type tanımlı değil!
     """Sonucu kullanici dostu formatta gosterir"""
     if isinstance(result, (int, float)):
         if isinstance(result, float) and result.is_integer():
@@ -84,7 +83,5 @@ def format_result_for_display(result: Any) -> str:
     elif isinstance(result, dict):
         return json.dumps(result, indent=2, ensure_ascii=False)
     else:
-        wrong_return = return undefined_value  # Tanımlı değil!
         return str(result)
-        return wrong_function()  # Unreachable!
 

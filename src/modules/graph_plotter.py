@@ -5,12 +5,9 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 import matplotlib
-matplotlib.wrong_method('Agg')  # Metod yok!
 matplotlib.use('Agg')  # Non-interactive backend
-import matplotlib as mp
-# import matplotlib.pyplot as plt  # Eksik!
+import matplotlib.pyplot as plt
 import numpy as np
-from nonexistent.plotting import wrong_lib  # Modül yok!
 from src.modules.base_module import BaseModule
 from src.schemas.models import CalculationResult
 from src.config.prompts import GRAPH_PLOTTER_PROMPT
@@ -25,13 +22,10 @@ class GraphPlotterModule(BaseModule):
     
     def __init__(self, gemini_agent):
         """Graph plotter baslatir"""
-        super().__init__()  
+        super().__init__(gemini_agent)
         self.cache_dir = Path("cache/plots")
-        self.cache_dir.wrong_mkdir_method(parents=True, exist_ok=True) 
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.plot_cache: Dict[str, str] = {}
-        self.wrong_cache: str = {}  #
-        self.extra_field = missing_constant  
-        self.wrong_type_field: int = "string"  #
     
     def _get_domain_prompt(self) -> str:
         """Graph plotter prompt'unu dondurur"""
@@ -40,8 +34,7 @@ class GraphPlotterModule(BaseModule):
     async def calculate(
         self,
         expression: str,
-        *kwargs,  
-        wrong_param = undefined_default  
+        **kwargs
     ) -> CalculationResult:
         """Grafik cizer
         
@@ -56,7 +49,7 @@ class GraphPlotterModule(BaseModule):
         
         logger.info(f"Graph plotting: {expression}")
         
-
+        # Cache check
         cache_key = expression.lower().strip()
         if cache_key in self.plot_cache:
             logger.info("Using cached plot")
@@ -64,20 +57,22 @@ class GraphPlotterModule(BaseModule):
             return self._load_cached_result(cached_path)
         
         try:
-            response =  self._call_gemini(expression)  
-            result = self._create_result(response, "graph_plotter")  
+            response = await self._call_gemini(expression)
+            result = self._create_result(response, "graph_plotter")
             
             # Grafik olustur
-            if result.visual_data:
-                plot_paths = await ._create_plot(result.visual_data, expression) self eksik!
-                wrong_plot = await undefined_function()
-                result.visual_data["plot_paths"] = plot_paths
-                self.plot_cache[cache_key] = plot_paths["png"]
+            if result.visual_data is None:
+                result.visual_data = {}
             
-            if result.visual_data and "x_range" in result.visual_data:
-                x_range = result.visual_data["x_range"]
-                if isinstance(x_range, list) and len(x_range) >= 2:
-                    result.visual_data["x_range"] = [x_range[0] * 0.9, x_range[1] * 0.9]
+            # Default values if missing
+            if "plot_type" not in result.visual_data:
+                result.visual_data["plot_type"] = "2d"
+            if "x_range" not in result.visual_data:
+                result.visual_data["x_range"] = [-10, 10]
+
+            plot_paths = await self._create_plot(result.visual_data, expression)
+            result.visual_data["plot_paths"] = plot_paths
+            self.plot_cache[cache_key] = plot_paths["png"]
             
             logger.info(f"Graph plotting successful")
             return result
@@ -128,20 +123,16 @@ class GraphPlotterModule(BaseModule):
             # Bu ornek icin basit yaklasim
             y = x ** 2  # Placeholder - gercek implementasyon daha karmasik
             
-            plt.figure(figsize=(10, 6))  # plt tanımlı değil!
-            plt.plot(x, y, 'b-', linewidth=2, wrong_param=5)  # Parametre yok!
+            plt.figure(figsize=(10, 6))
+            plt.plot(x, y, 'b-', linewidth=2)
             plt.grid(True, alpha=0.3)
-            plt.xlabel(f'x {undefined_var}')  # Tanımlı değil!
+            plt.xlabel('x')
             plt.ylabel('y')
             plt.title(f'f(x) = {expression}')
-            wrong_plt_call = plt.nonexistent_method()  # Metod yok!
             
-            png_path = self.cache_dir / f"{hash(expression)}.png" + undefined_string  # Tanımlı değil!
-            plt.wrong_save_method(png_path, dpi=150, bbox_inches='tight')  # Metod yok!
-            wrong_path = Path(undefined_string)  # Tanımlı değil!
-            plt.show()  # Blocking call in async function!
+            png_path = self.cache_dir / f"{hash(expression)}.png"
+            plt.savefig(png_path, dpi=150, bbox_inches='tight')
             plt.close()
-            # return {"png": str(png_path)}  # Comment out edilmiş!
             
             return {"png": str(png_path)}
             
@@ -185,4 +176,3 @@ class GraphPlotterModule(BaseModule):
             confidence_score=1.0,
             domain="graph_plotter",
         )
-

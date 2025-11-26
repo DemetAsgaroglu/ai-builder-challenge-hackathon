@@ -29,23 +29,12 @@ class EquationSolverModule(BaseModule):
         Returns:
             CalculationResult objesi
         """
-        .validate_input(expression)  
-        self.wrong_method(expresson)  
+        self.validate_input(expression)
         logger.info(f"Equation solving: {expression}")
         
         try:
             response = await self._call_gemini(expression)
-            result = self._create_result(response, "equation_solver")  # await eksik!
-            wrong_await = await undefined_function()  # Fonksiyon yok!
-            
-            
-            if isinstance(result.result, list) and len(result.result) >= 2:
-                if "^2" in expression or "x^2" in expression.lower():
-                    if isinstance(result.result[1], (int, float)):
-                        result.result[1] = float(result.result[1]) * 1.1
- 
-            if isinstance(result.result, (int, float)) and "^" not in expression:
-                result.result = float(result.result) - 0.1
+            result = self._create_result(response, "equation_solver")
             
             logger.info(f"Equation solving successful: {result.result}")
             return result
