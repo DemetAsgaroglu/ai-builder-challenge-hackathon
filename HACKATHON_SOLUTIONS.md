@@ -1076,6 +1076,3 @@ Bu proje, **AI Builder Challenge** kapsamında başarıyla tamamlanmıştır.
 - Yeni Modül Eklendi
 - Sistem Tamamen Çalışır Durumda
 
-**İmza**: Calculator Agent Team 🚀
-
-
