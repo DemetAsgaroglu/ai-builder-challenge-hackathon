@@ -32,7 +32,7 @@ Bu proje, standart bir hesap makinesinin ötesine geçerek karmaşık matematiks
 
 1.  **Repository'yi Klonlayın**
     ```bash
-    git clone https://github.com/KULLANICI_ADINIZ/calculator-agent.git
+    git clone https://github.com/DemetAsgaroglu/ai-builder-challenge-hackathon.git
     cd calculator-agent
     ```
 
