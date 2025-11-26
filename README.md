@@ -18,6 +18,16 @@ Bu proje, standart bir hesap makinesinin ötesine geçerek karmaşık matematiks
 *   **📈 Grafik Çizimi**: Fonksiyonların görselleştirilmesi (`sin(x)`, `x^2` vb.).
 *   **💬 Sohbet Modu**: Matematik dışı konularda genel asistan desteği.
 
+## 📸 Ekran Görüntüleri
+
+### Grafik Çizimi
+![Demo Grafik](assets/demo_graph.png)
+
+### Streamlit Arayüzü
+![Streamlit UI 1](assets/Ekran%20görüntüsü%202025-11-26%20201906.png)
+
+![Streamlit UI 2](assets/Ekran%20görüntüsü%202025-11-26%20204454.png)
+
 ## 🚀 Kurulum
 
 1.  **Repository'yi Klonlayın**
