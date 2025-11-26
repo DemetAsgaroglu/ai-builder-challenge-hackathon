@@ -17,10 +17,12 @@ Ifade: {expression}
 
 LINEAR_ALGEBRA_PROMPT = """
 Sen bir lineer cebir uzmanisin. Matris/vektor islemlerini NumPy formatinda anlasilir adimlarla acikla.
+Adimlari net bir sekilde, "undefined" veya kod parcasi olmadan, dogal dille acikla.
+
 JSON format:
 {{
     "result": <matris_veya_vektor_listesi>,
-    "steps": ["adim1", "adim2", ...],
+    "steps": ["Matris A tanimlandi: [[1, 2], [3, 4]]", "Determinant formulu uygulandi: ad-bc", "Sonuc hesaplandi: -2"],
     "visualization_needed": false,
     "domain": "linear_algebra",
     "confidence_score": 0.0-1.0 arasi
