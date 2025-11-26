@@ -6,8 +6,7 @@ import sys
 # Add the project root to the python path to ensure imports work
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.core.agent import GeminiAgent
-from src.utils.logger import setup_logger
+from src.main import CalculatorAgent
 
 # Page Configuration
 st.set_page_config(
@@ -42,7 +41,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "agent" not in st.session_state:
-    st.session_state.agent = GeminiAgent()
+    st.session_state.agent = CalculatorAgent()
 
 # Sidebar
 with st.sidebar:
@@ -54,7 +53,7 @@ with st.sidebar:
     st.markdown("- **Lineer Cebir**: `[[1,2],[3,4]] det`")
     st.markdown("- **Finans**: `1000 TL %10 faiz`")
     st.markdown("- **İstatistik**: `[1,2,3] ortalama`")
-    st.markdown("- **Grafik**: `sin(x) çiz`")
+    st.markdown("- **Grafik**: [sin(x) çiz](cci:1://file:///d:/ai-builder-challenge-hackathon-main/ai-builder-challenge-hackathon-main/src/main.py:222:0-227:21)")
     st.markdown("---")
     if st.button("🗑️ Geçmişi Temizle"):
         st.session_state.messages = []
@@ -86,26 +85,26 @@ if prompt := st.chat_input("Bir işlem yazın (örn: x^2 grafiğini çiz)..."):
                 response_data = asyncio.run(st.session_state.agent.process_command(prompt))
                 
                 # Extract result and steps
-                result_text = response_data.get("result", "İşlem tamamlandı.")
-                steps = response_data.get("steps", [])
+                # Since process_command returns a string (formatted output), we use it directly
+                # If we need structured data, we would need to modify process_command or parse the string
+                # But for now, let's display the string result
                 
-                # Format output
-                output_text = f"**Sonuç:** `{result_text}`\n\n"
-                if steps:
-                    output_text += "**Adımlar:**\n"
-                    for step in steps:
-                        output_text += f"- {step}\n"
+                output_text = response_data
                 
                 st.markdown(output_text)
                 
-                # Check for graph image
+                # Check for graph image in the output text or side effect
+                # The agent currently returns a formatted string. 
+                # If a plot was generated, it might be in the text like [GRAFIK]: path/to/plot.png
+                
                 image_path = None
-                # Check if result looks like a file path to a png
-                if isinstance(result_text, str) and result_text.endswith(".png") and "cache" in result_text:
-                     # Fix path for display if needed, or just use it if absolute/relative works
-                     if os.path.exists(result_text):
-                         st.image(result_text)
-                         image_path = result_text
+                if "[GRAFIK]:" in output_text:
+                    parts = output_text.split("[GRAFIK]:")
+                    if len(parts) > 1:
+                        potential_path = parts[1].strip()
+                        if os.path.exists(potential_path):
+                            st.image(potential_path)
+                            image_path = potential_path
                 
                 # Add assistant message to history
                 message_data = {"role": "assistant", "content": output_text}
@@ -117,4 +116,3 @@ if prompt := st.chat_input("Bir işlem yazın (örn: x^2 grafiğini çiz)..."):
                 error_msg = f"❌ Hata: {str(e)}"
                 st.error(error_msg)
                 st.session_state.messages.append({"role": "assistant", "content": error_msg})
-
