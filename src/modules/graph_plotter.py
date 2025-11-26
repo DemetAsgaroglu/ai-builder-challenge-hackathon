@@ -117,20 +117,72 @@ class GraphPlotterModule(BaseModule):
     ) -> Dict[str, str]:
         """2D grafik cizer"""
         try:
-            x = np.linspace(x_range[0], x_range[1], 1000)
-            
             # Basit eval (guvenli) - production'da daha guvenli parser gerekli
-            # Bu ornek icin basit yaklasim
-            y = x ** 2  # Placeholder - gercek implementasyon daha karmasik
+            # Check if single point (x=3 case)
+            is_single_point = abs(x_range[1] - x_range[0]) < 1e-6
+            
+            if is_single_point:
+                # Expand range to show context
+                center_x = x_range[0]
+                view_range = [center_x - 5, center_x + 5]
+                x = np.linspace(view_range[0], view_range[1], 1000)
+            else:
+                x = np.linspace(x_range[0], x_range[1], 1000)
+            
+            # Safe evaluation environment
+            safe_dict = {
+                "x": x,
+                "sin": np.sin,
+                "cos": np.cos,
+                "tan": np.tan,
+                "exp": np.exp,
+                "log": np.log,
+                "sqrt": np.sqrt,
+                "pi": np.pi,
+                "abs": np.abs,
+                "np": np
+            }
+            
+            # Clean expression for eval
+            # Replace ^ with ** for python syntax
+            eval_expr = expression.replace("^", "**")
+            
+            # Evaluate
+            try:
+                y = eval(eval_expr, {"__builtins__": {}}, safe_dict)
+                
+                # Handle constant result (e.g. y = 5)
+                if isinstance(y, (int, float)):
+                    y = np.full_like(x, y)
+            except Exception as eval_error:
+                logger.warning(f"Eval failed for '{expression}': {eval_error}. Fallback to x^2")
+                y = x ** 2  # Fallback only on error
             
             plt.figure(figsize=(10, 6))
-            plt.plot(x, y, 'b-', linewidth=2)
+            plt.plot(x, y, 'b-', linewidth=2, label=f'f(x)={expression}')
+            
+            # If single point, highlight it
+            if is_single_point:
+                # Calculate y for the specific point
+                # We can reuse the eval logic or just pick the center index if we were careful, 
+                # but let's re-eval for precision
+                try:
+                    point_val = eval(eval_expr, {"__builtins__": {}}, {**safe_dict, "x": center_x})
+                    plt.plot(center_x, point_val, 'ro', markersize=10, label=f'x={center_x}')
+                    plt.annotate(f'({center_x}, {point_val:.2f})', 
+                                 (center_x, point_val),
+                                 xytext=(10, 10), textcoords='offset points',
+                                 arrowprops=dict(arrowstyle='->'))
+                except:
+                    pass
+
             plt.grid(True, alpha=0.3)
             plt.xlabel('x')
             plt.ylabel('y')
             plt.title(f'f(x) = {expression}')
+            plt.legend()
             
-            png_path = self.cache_dir / f"{hash(expression)}.png"
+            png_path = self.cache_dir / f"{hash(expression + str(x_range))}.png"
             plt.savefig(png_path, dpi=150, bbox_inches='tight')
             plt.close()
             
