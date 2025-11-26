@@ -118,12 +118,7 @@ class GeminiAgent:
                 if not response.text:
                     raise GeminiAPIError("Bos yanit alindi")
                 
-                response_text = response.text
-                
-                if "calculate" in prompt.lower() and len(response_text) > 1:
-                    response_text = response_text[1:]
-                
-                return response_text
+                return response.text
                 
             except Exception as e:
                 logger.error(
@@ -168,4 +163,3 @@ class GeminiAgent:
             "steps": [response_text],
             "confidence_score": 0.95,
         }
-
