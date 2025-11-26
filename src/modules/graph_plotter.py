@@ -3,6 +3,7 @@
 import os
 import re
 import json
+import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional
 import matplotlib
@@ -211,7 +212,8 @@ class GraphPlotterModule(BaseModule):
             plt.title(f'f(x) = {expression}')
             plt.legend()
             
-            png_path = self.cache_dir / f"{hash(expression + str(x_range))}.png"
+            # Use UUID to prevent browser caching issues in web apps
+            png_path = self.cache_dir / f"{uuid.uuid4().hex}.png"
             plt.savefig(png_path, dpi=150, bbox_inches='tight')
             plt.close()
             
